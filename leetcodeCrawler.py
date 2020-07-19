@@ -40,19 +40,23 @@ class Leetcode:
         print("Go to leetcode")
         self.driver.get(self.home_page)
 
+        print("loading cookie...")
         cookies = pickle.load(open('cookiesAfter.pkl', 'rb'))
         for cookie in cookies:
             self.driver.add_cookie(cookie)
 
         time.sleep(5)
+        print("refresh..")
         self.driver.get(self.home_page)
 
         try:
             self.driver.find_element_by_id('nav-user-app')
         except:
+            print("session is invalid or not exist")
+            print("try to login")
             self.login()
 
-    def login(self):
+    def __login(self):
         self.driver.implicitly_wait(5)
         print("Go to login page")
         # self.driver.get(self.login_page)
@@ -78,21 +82,40 @@ class Leetcode:
         pickle.dump(self.driver.get_cookies(), open('cookiesAfter.pkl', 'wb'))
 
     def goToSubmission(self):
+        time.sleep(5)
         print("Go to submission")
-        self.driver.get(self.submission)
+        usr = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
+        usr.click()
+        time.sleep(1)
+        submit = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span/ul/div[2]/li[2]/div/div[3]')
+        submit.click()
+
+    def readCode(self):
+        time.sleep(5)
+        myCode = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]')
+        print(myCode.text)
+        print(type(myCode.text))
+        self.driver.back()
 
     def getCode(self):
-        # // *[ @ id = "submission-list-app"] / div / table / tbody / tr[1] / td[3] / a
+        # // *[ @ id = "submission-list-app"] / div / table / tbody / tr[x] / td[3] / a
+        time.sleep(5)
         print("Get code")
-        bodyPath = '//*[@id="submission-list-app"]/div/table/tbody'
-        tbody = self.driver.find_element_by_xpath(bodyPath)
+        head = '//*[@id="submission-list-app"]/div/table/tbody'
+        tail = '/td[3]/a'
+        tbody = self.driver.find_element_by_xpath(head)
         tr = tbody.find_element_by_tag_name('tr')
-        print(tbody.size)
-        print(tr.size)
-        print(tbody.size['height'] // tr.size['height'])
+        tableSize = tbody.size['height'] // tr.size['height']
+        print("This pages table size is: {}".format(tableSize))
+
+        btn = self.driver.find_element_by_xpath(head + '/tr[1]' + tail)
+        btn.click()
+        self.readCode()
 
 
 if __name__ == "__main__":
     leetcode = Leetcode()
     leetcode.goToLeetcode()
+    leetcode.goToSubmission()
+    leetcode.getCode()
     pickle.dump(leetcode.driver.get_cookies(), open('cookiesAfter.pkl', 'wb'))
