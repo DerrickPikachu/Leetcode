@@ -54,7 +54,7 @@ class Leetcode:
         except:
             print("session is invalid or not exist")
             print("try to login")
-            self.login()
+            self.__login()
 
     def __login(self):
         self.driver.implicitly_wait(5)
@@ -90,7 +90,7 @@ class Leetcode:
         submit = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span/ul/div[2]/li[2]/div/div[3]')
         submit.click()
 
-    def readCode(self):
+    def __readCode(self):
         time.sleep(5)
         myCode = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]')
         print(myCode.text)
@@ -110,7 +110,7 @@ class Leetcode:
 
         btn = self.driver.find_element_by_xpath(head + '/tr[1]' + tail)
         btn.click()
-        self.readCode()
+        self.__readCode()
 
 
 if __name__ == "__main__":
