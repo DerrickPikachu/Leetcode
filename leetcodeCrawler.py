@@ -33,7 +33,8 @@ class Leetcode:
 
         print("Open Chrome")
         self.driver = webdriver.Chrome('./chromedriver', chrome_options=options)
-        self.driver.set_window_size(1024, 960)
+        # self.driver.set_window_size(1024, 960)
+        self.driver.maximize_window()
 
     def goToLeetcode(self):
         self.driver.implicitly_wait(5)
@@ -92,9 +93,18 @@ class Leetcode:
 
     def __readCode(self):
         time.sleep(5)
-        myCode = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]')
-        print(myCode.text)
-        print(type(myCode.text))
+        problemTitle = self.driver.find_element_by_xpath('//*[@id="submission-app"]/div/div[1]').text
+        parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
+        child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
+        entrySize = parent.size['height'] // child.size['height']
+        print("{} {}".format(parent.size['height'], child.size['height']))
+        target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
+        code = ''
+
+        for i in range(1, entrySize + 1):
+            line = self.driver.find_element_by_xpath(target + str(i) + ']')
+            code += line.text + '\n'
+        print(code)
         self.driver.back()
 
     def getCode(self):
