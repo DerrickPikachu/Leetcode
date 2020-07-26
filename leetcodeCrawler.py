@@ -1,6 +1,9 @@
+import threading
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from account import account
+from codeRecorder import Recorder
 import time
 import pickle
 
@@ -28,8 +31,10 @@ class Leetcode:
         self.login_page = "https://leetcode.com/accounts/login/"
         self.submission = "https://leetcode.com/submissions/#/1"
         options = Options()
-        # options.add_argument('--headless')
-        # options.add_argument('--no-sandbox')
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+
+        self.recorder = Recorder()
 
         print("Open Chrome")
         self.driver = webdriver.Chrome('./chromedriver', chrome_options=options)
@@ -94,33 +99,55 @@ class Leetcode:
     def __readCode(self):
         time.sleep(5)
         problemTitle = self.driver.find_element_by_xpath('//*[@id="submission-app"]/div/div[1]').text
-        parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
-        child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
-        entrySize = parent.size['height'] // child.size['height']
-        print("{} {}".format(parent.size['height'], child.size['height']))
-        target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
-        code = ''
+        print("Problem Name: " + problemTitle)
 
-        for i in range(1, entrySize + 1):
-            line = self.driver.find_element_by_xpath(target + str(i) + ']')
-            code += line.text + '\n'
-        print(code)
+        if not self.recorder.checkExist(problemTitle):
+            parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
+            child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
+            entrySize = parent.size['height'] // child.size['height']
+
+            target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
+            code = ''
+
+            print("Reading code....")
+            try:
+                for i in range(1, entrySize + 1):
+                    line = self.driver.find_element_by_xpath(target + str(i) + ']')
+                    code += line.text + '\n'
+            except:
+                print("Index out of bound, but is ok..., program continue")
+
+            print("Start to write the code into the file...")
+            task = threading.Thread(target=self.recorder.record, args=(code, problemTitle))
+            task.start()
+        else:
+            print("Has already been saved in local")
+
+        print()
         self.driver.back()
 
     def getCode(self):
         # // *[ @ id = "submission-list-app"] / div / table / tbody / tr[x] / td[3] / a
         time.sleep(5)
         print("Get code")
+
         head = '//*[@id="submission-list-app"]/div/table/tbody'
         tail = '/td[3]/a'
-        tbody = self.driver.find_element_by_xpath(head)
-        tr = tbody.find_element_by_tag_name('tr')
-        tableSize = tbody.size['height'] // tr.size['height']
-        print("This pages table size is: {}".format(tableSize))
+        acchead = '//*[@id="submission-list-app"]/div/table/tbody'
+        acctail = '/td[3]'
 
-        btn = self.driver.find_element_by_xpath(head + '/tr[1]' + tail)
-        btn.click()
-        self.__readCode()
+        try:
+            for i in range(1, 21):
+                accepted = self.driver.find_element_by_xpath(acchead + '/tr[' + str(i) + ']' + acctail)
+                if accepted.text == "Accepted":
+                    btn = self.driver.find_element_by_xpath(head + '/tr[' + str(i) + ']' + tail)
+                    btn.click()
+                    self.__readCode()
+                time.sleep(1)
+        except:
+            print("This page has no more code")
+
+        self.recorder.saveAll()
 
 
 if __name__ == "__main__":

@@ -18,9 +18,9 @@ class Recorder:
             self.preCodeId = file.read()
             file.close()
         except FileNotFoundError:
-            print(self.savedCodeFileName + " haven't been created")
+            print(self.previousCodeIdFile + " haven't been created")
 
-    def storeCodeId(self, id: str):
+    def __storeCodeId(self, id: str):
         file = open(self.folder + self.previousCodeIdFile, 'w')
         file.write(id)
         file.close()
@@ -29,15 +29,15 @@ class Recorder:
         try:
             file = open(self.folder + self.savedCodeFileName, 'r')
             content = file.read()
-            self.savedCode = content.split()
+            self.savedCode = content.split('|')
             file.close()
         except FileNotFoundError:
-            print(self.previousCodeIdFile + " haven't been created")
+            print(self.savedCodeFileName + " haven't been created")
 
-    def storeSavedCodeList(self):
+    def __storeSavedCodeList(self):
         file = open(self.folder + self.savedCodeFileName, 'w')
         for proName in self.savedCode:
-            file.write(proName + ' ')
+            file.write(proName + '|')
         file.close()
 
     def record(self, code: str, problemName: str):
@@ -46,12 +46,15 @@ class Recorder:
             file = open(self.folder + pName + '.txt', 'w')
             file.write(code)
             file.close()
-            self.savedCode.append(pName)
+            self.savedCode.append(problemName)
         else:
             print(problemName + " is already exist")
 
     def checkExist(self, problemName: str):
         return problemName in self.savedCode
+
+    def saveAll(self):
+        self.__storeSavedCodeList()
 
 
 if __name__ == '__main__':
