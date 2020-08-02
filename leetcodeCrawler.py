@@ -1,5 +1,6 @@
 import threading
 
+from selenium.common.exceptions import NoSuchElementException
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from account import account
@@ -31,8 +32,8 @@ class Leetcode:
         self.login_page = "https://leetcode.com/accounts/login/"
         self.submission = "https://leetcode.com/submissions/#/1"
         options = Options()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
+        # options.add_argument('--headless')
+        # options.add_argument('--no-sandbox')
 
         self.recorder = Recorder()
 
@@ -56,7 +57,7 @@ class Leetcode:
         self.driver.get(self.home_page)
 
         try:
-            self.driver.find_element_by_id('nav-user-app')
+            self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
         except:
             print("session is invalid or not exist")
             print("try to login")
@@ -137,15 +138,21 @@ class Leetcode:
         acctail = '/td[3]'
 
         try:
-            for i in range(1, 21):
-                accepted = self.driver.find_element_by_xpath(acchead + '/tr[' + str(i) + ']' + acctail)
-                if accepted.text == "Accepted":
-                    btn = self.driver.find_element_by_xpath(head + '/tr[' + str(i) + ']' + tail)
-                    btn.click()
-                    self.__readCode()
-                time.sleep(1)
-        except:
-            print("This page has no more code")
+            while True:
+                for i in range(1, 21):
+                    accepted = self.driver.find_element_by_xpath(acchead + '/tr[' + str(i) + ']' + acctail)
+                    if accepted.text == "Accepted":
+                        btn = self.driver.find_element_by_xpath(head + '/tr[' + str(i) + ']' + tail)
+                        btn.click()
+                        self.__readCode()
+                    time.sleep(2)
+
+                self.driver \
+                    .find_element_by_id('submission-list-app') \
+                    .find_element_by_class_name('next') \
+                    .find_element_by_tag_name('a').click()
+        except NoSuchElementException:
+            print("There is no more code, task finish!!\nAnd then you may push your new code")
 
         self.recorder.saveAll()
 
