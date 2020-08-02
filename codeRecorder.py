@@ -53,8 +53,9 @@ class Recorder:
     def checkExist(self, problemName: str):
         return problemName in self.savedCode
 
-    def saveAll(self):
+    def saveAll(self, id : str):
         self.__storeSavedCodeList()
+        self.__storeCodeId(id)
 
 
 if __name__ == '__main__':

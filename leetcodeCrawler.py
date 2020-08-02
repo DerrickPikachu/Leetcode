@@ -31,6 +31,7 @@ class Leetcode:
         self.home_page = "https://leetcode.com/"
         self.login_page = "https://leetcode.com/accounts/login/"
         self.submission = "https://leetcode.com/submissions/#/1"
+        self.__firstProgramUrl = ''
         options = Options()
         # options.add_argument('--headless')
         # options.add_argument('--no-sandbox')
@@ -41,91 +42,6 @@ class Leetcode:
         self.driver = webdriver.Chrome('./chromedriver', chrome_options=options)
         # self.driver.set_window_size(1024, 960)
         self.driver.maximize_window()
-
-    def goToLeetcode(self):
-        self.driver.implicitly_wait(5)
-        print("Go to leetcode")
-        self.driver.get(self.home_page)
-
-        print("loading cookie...")
-        cookies = pickle.load(open('cookiesAfter.pkl', 'rb'))
-        for cookie in cookies:
-            self.driver.add_cookie(cookie)
-
-        time.sleep(5)
-        print("refresh..")
-        self.driver.get(self.home_page)
-
-        try:
-            self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
-        except:
-            print("session is invalid or not exist")
-            print("try to login")
-            self.__login()
-
-    def __login(self):
-        self.driver.implicitly_wait(5)
-        print("Go to login page")
-        # self.driver.get(self.login_page)
-        signIn = self.driver.find_element_by_xpath(
-            '//*[@id="landing-page-app"]/div/div[1]/div[3]/div[1]/div/div/div[2]/div/a[5]'
-        )
-        signIn.click()
-
-        time.sleep(5)
-        print("Write the account information")
-        usernameInput = self.driver.find_element_by_xpath('//*[@id="id_login"]')
-        passwordInput = self.driver.find_element_by_xpath('//*[@id="id_password"]')
-        usernameInput.send_keys(account['login'])
-        passwordInput.send_keys(account['password'])
-
-        time.sleep(5)
-        print("Click the login button")
-        submitButton = self.driver.find_element_by_xpath('//*[@id="signin_btn"]/div/span')
-        submitButton.click()
-
-        input("Please press any key to continue")
-        self.driver.implicitly_wait(5)
-        pickle.dump(self.driver.get_cookies(), open('cookiesAfter.pkl', 'wb'))
-
-    def goToSubmission(self):
-        time.sleep(5)
-        print("Go to submission")
-        usr = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
-        usr.click()
-        time.sleep(1)
-        submit = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span/ul/div[2]/li[2]/div/div[3]')
-        submit.click()
-
-    def __readCode(self):
-        time.sleep(5)
-        problemTitle = self.driver.find_element_by_xpath('//*[@id="submission-app"]/div/div[1]').text
-        print("Problem Name: " + problemTitle)
-
-        if not self.recorder.checkExist(problemTitle):
-            parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
-            child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
-            entrySize = parent.size['height'] // child.size['height']
-
-            target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
-            code = ''
-
-            print("Reading code....")
-            try:
-                for i in range(1, entrySize + 1):
-                    line = self.driver.find_element_by_xpath(target + str(i) + ']')
-                    code += line.text + '\n'
-            except:
-                print("Index out of bound, but is ok..., program continue")
-
-            print("Start to write the code into the file...")
-            task = threading.Thread(target=self.recorder.record, args=(code, problemTitle))
-            task.start()
-        else:
-            print("Has already been saved in local")
-
-        print()
-        self.driver.back()
 
     def getCode(self):
         # // *[ @ id = "submission-list-app"] / div / table / tbody / tr[x] / td[3] / a
@@ -154,7 +70,103 @@ class Leetcode:
         except NoSuchElementException:
             print("There is no more code, task finish!!\nAnd then you may push your new code")
 
-        self.recorder.saveAll()
+        self.recorder.saveAll(self.__getCodeId(self.__firstProgramUrl))
+
+    def goToLeetcode(self):
+        self.driver.implicitly_wait(5)
+        print("Go to leetcode")
+        self.driver.get(self.home_page)
+
+        print("loading cookie...")
+        cookies = pickle.load(open('cookiesAfter.pkl', 'rb'))
+        for cookie in cookies:
+            self.driver.add_cookie(cookie)
+
+        time.sleep(5)
+        print("refresh..")
+        self.driver.get(self.home_page)
+
+        try:
+            self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
+        except:
+            print("session is invalid or not exist")
+            print("try to login")
+            self.__login()
+
+    def goToSubmission(self):
+        time.sleep(5)
+        print("Go to submission")
+        usr = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span')
+        usr.click()
+        time.sleep(1)
+        submit = self.driver.find_element_by_xpath('//*[@id="nav-user-app"]/span/ul/div[2]/li[2]/div/div[3]')
+        submit.click()
+
+    def __getCodeId(self, url : str):
+        entrys = url.split('/')
+        return entrys[len(entrys) - 2]
+
+    def __readCode(self):
+        time.sleep(5)
+
+        if self.__firstProgramUrl == '':
+            self.__firstProgramUrl = self.driver.current_url
+        if self.__getCodeId(self.driver.current_url) == self.recorder.preCodeId:
+            print("Reach the previous record, stop the process.")
+            return
+
+        problemTitle = self.driver.find_element_by_xpath('//*[@id="submission-app"]/div/div[1]').text
+        print("Problem Name: " + problemTitle)
+
+        if not self.recorder.checkExist(problemTitle):
+            parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
+            child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
+            entrySize = parent.size['height'] // child.size['height']
+
+            target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
+            code = ''
+
+            print("Reading code....")
+            try:
+                for i in range(1, entrySize + 1):
+                    line = self.driver.find_element_by_xpath(target + str(i) + ']')
+                    code += line.text + '\n'
+            except:
+                print("Index out of bound, but is ok..., program continue")
+
+            print("Start to write the code into the file...")
+            task = threading.Thread(target=self.recorder.record, args=(code, problemTitle))
+            task.start()
+        else:
+            print("Has already been saved in local")
+
+        print()
+        self.driver.back()
+
+    def __login(self):
+        self.driver.implicitly_wait(5)
+        print("Go to login page")
+        # self.driver.get(self.login_page)
+        signIn = self.driver.find_element_by_xpath(
+            '//*[@id="landing-page-app"]/div/div[1]/div[3]/div[1]/div/div/div[2]/div/a[5]'
+        )
+        signIn.click()
+
+        time.sleep(5)
+        print("Write the account information")
+        usernameInput = self.driver.find_element_by_xpath('//*[@id="id_login"]')
+        passwordInput = self.driver.find_element_by_xpath('//*[@id="id_password"]')
+        usernameInput.send_keys(account['login'])
+        passwordInput.send_keys(account['password'])
+
+        time.sleep(5)
+        print("Click the login button")
+        submitButton = self.driver.find_element_by_xpath('//*[@id="signin_btn"]/div/span')
+        submitButton.click()
+
+        input("Please press any key to continue")
+        self.driver.implicitly_wait(5)
+        pickle.dump(self.driver.get_cookies(), open('cookiesAfter.pkl', 'wb'))
 
 
 if __name__ == "__main__":
