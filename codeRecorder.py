@@ -40,10 +40,18 @@ class Recorder:
             file.write(proName + '|')
         file.close()
 
-    def record(self, code: str, problemName: str):
+    def record(self, code: str, problemName: str, language: str):
+        subFileName = ''
+        if language == 'cpp':
+            subFileName = '.cpp'
+        elif language == 'python3' or language == 'python':
+            subFileName = '.py'
+        elif language == 'java':
+            subFileName = '.java'
+
         if not self.checkExist(problemName):
             pName = problemName.replace(' ', '_')
-            file = open(self.folder + pName + '.txt', 'w')
+            file = open(self.folder + pName + subFileName, 'w')
             file.write(code)
             file.close()
             self.savedCode.append(problemName)

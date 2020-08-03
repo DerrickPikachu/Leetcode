@@ -33,8 +33,8 @@ class Leetcode:
         self.submission = "https://leetcode.com/submissions/#/1"
         self.__firstProgramUrl = ''
         options = Options()
-        # options.add_argument('--headless')
-        # options.add_argument('--no-sandbox')
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
 
         self.recorder = Recorder()
 
@@ -55,19 +55,21 @@ class Leetcode:
 
         try:
             while True:
+                time.sleep(5)
                 for i in range(1, 21):
                     accepted = self.driver.find_element_by_xpath(acchead + '/tr[' + str(i) + ']' + acctail)
                     if accepted.text == "Accepted":
                         btn = self.driver.find_element_by_xpath(head + '/tr[' + str(i) + ']' + tail)
                         btn.click()
                         self.__readCode()
-                    time.sleep(2)
+                    time.sleep(3)
 
                 self.driver \
                     .find_element_by_id('submission-list-app') \
                     .find_element_by_class_name('next') \
                     .find_element_by_tag_name('a').click()
         except NoSuchElementException:
+            print(NoSuchElementException)
             print("There is no more code, task finish!!\nAnd then you may push your new code")
 
         self.recorder.saveAll(self.__getCodeId(self.__firstProgramUrl))
@@ -122,6 +124,7 @@ class Leetcode:
             parent = self.driver.find_element_by_xpath('//*[@id="ace"]/div')
             child = self.driver.find_element_by_xpath('//*[@id="ace"]/div/div[3]/div/div[3]/div[1]')
             entrySize = parent.size['height'] // child.size['height']
+            language = self.driver.find_element_by_xpath('//*[@id="result_language"]')
 
             target = '//*[@id="ace"]/div/div[3]/div/div[3]/div['
             code = ''
@@ -135,7 +138,7 @@ class Leetcode:
                 print("Index out of bound, but is ok..., program continue")
 
             print("Start to write the code into the file...")
-            task = threading.Thread(target=self.recorder.record, args=(code, problemTitle))
+            task = threading.Thread(target=self.recorder.record, args=(code, problemTitle, language.text,))
             task.start()
         else:
             print("Has already been saved in local")
